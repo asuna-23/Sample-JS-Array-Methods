@@ -1,0 +1,74 @@
+Here are brief descriptions of commonly used JavaScript array methods:
+
+push(): Adds one or more elements to the end of an array and returns the new length of the array.
+
+const arr = [1, 2, 3];
+arr.push(4); // arr is now [1, 2, 3, 4]
+
+pop(): Removes the last element from an array and returns that element. This method changes the length of the array.
+
+const arr = [1, 2, 3];
+const lastElement = arr.pop(); // lastElement is 3, arr is now [1, 2]
+shift(): Removes the first element from an array and returns that element, shifting all other elements down.
+
+const arr = [1, 2, 3];
+const firstElement = arr.shift(); // firstElement is 1, arr is now [2, 3]
+
+unshift(): Adds one or more elements to the beginning of an array and returns the new length of the array.
+
+const arr = [2, 3];
+arr.unshift(1); // arr is now [1, 2, 3]
+
+splice(): Adds or removes elements from an array at a specified index. It can be used to remove elements and/or insert new ones.
+
+const arr = [1, 2, 3];
+arr.splice(1, 1, 4); // arr is now [1, 4, 3]
+
+slice(): Returns a shallow copy of a portion of an array into a new array object, selected from start to end (not including end).
+
+const arr = [1, 2, 3, 4];
+const newArr = arr.slice(1, 3); // newArr is [2, 3]
+
+forEach(): Executes a provided function once for each array element.
+
+const arr = [1, 2, 3];
+arr.forEach((element) => console.log(element)); // logs 1, 2, 3
+
+map(): Creates a new array populated with the results of calling a provided function on every element in the calling array.
+
+const arr = [1, 2, 3];
+const doubled = arr.map((num) => num * 2); // doubled is [2, 4, 6]
+
+filter(): Creates a new array with all elements that pass the test implemented by the provided function.
+
+const arr = [1, 2, 3, 4];
+const evens = arr.filter((num) => num % 2 === 0); // evens is [2, 4]
+reduce(): Executes a reducer function on each element of the array, resulting in a single output value.
+
+const arr = [1, 2, 3, 4];
+const sum = arr.reduce((acc, num) => acc + num, 0); // sum is 10
+
+find(): Returns the value of the first element in the array that satisfies the provided testing function. Otherwise, undefined is returned.
+
+const arr = [1, 2, 3, 4];
+const found = arr.find((num) => num > 2); // found is 3
+
+includes(): Determines whether an array includes a certain value among its entries, returning true or false.
+
+const arr = [1, 2, 3];
+const hasTwo = arr.includes(2); // hasTwo is true
+
+sort(): Sorts the elements of an array in place and returns the sorted array. By default, the elements are sorted as strings.
+
+const arr = [3, 1, 2];
+arr.sort(); // arr is now [1, 2, 3]
+
+reverse(): Reverses the elements of an array in place and returns the reversed array.
+
+const arr = [1, 2, 3];
+arr.reverse(); // arr is now [3, 2, 1]
+
+join(): Joins all elements of an array into a string, with a specified separator.
+
+const arr = ['a', 'b', 'c'];
+const str = arr.join('-'); // str is "a-b-c"
