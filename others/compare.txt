@@ -1,0 +1,35 @@
+<template>
+  <div>
+    <h1>Comparison Details of the Two Persons</h1>
+    <b-form>
+      <b-row v-for="(person, index) in persons" :key="index">
+        <!-- Loop through each person's properties dynamically -->
+        <b-col v-for="(value, key) in person" :key="key">
+          <b-form-group :label="formatLabel(key)">
+            <b-form-input readonly :value="value"></b-form-input>
+          </b-form-group>
+        </b-col>
+      </b-row>
+    </b-form>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'BMIComparison',
+  props: {
+    persons: {
+      type: Array, // Updated to Array since it's looping through persons, not a single object
+      required: true
+    }
+  },
+  methods: {
+    // Helper function to format the labels nicely
+    formatLabel(key) {
+      return key
+        .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+        .replace(/^./, str => str.toUpperCase()); // Capitalize the first letter
+    }
+  }
+};
+</script>

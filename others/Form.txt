@@ -1,0 +1,94 @@
+<template>
+  <div>
+    <b-form @submit.prevent="submitForm">
+      <div v-for="personIndex in 2" :key="personIndex">
+        <b-row cols="3">
+          <b-col v-for="(formComponent, id) in formComponents" :key="id">
+            <common-text-input
+              :is="formComponent.componentName"
+              :key="id"
+              :item="formComponent"
+              v-model="formValues['person' + personIndex][formComponent.data.saveAs]"
+            />
+          </b-col>
+        </b-row>
+      </div>
+    </b-form>
+  </div>
+</template>
+
+<script>
+import CommonTextInput from "./CommonTextInput.vue";
+import { BMI_FORM_PROPERTIES } from "./recipeBMITextInput.js";
+
+export default {
+  name: "BMIForm",
+  props: {
+    formValues: {
+      type: Object,
+      required: true,
+    },
+  },
+  components: {
+    CommonTextInput,
+  },
+  data() {
+    return {
+      formComponents: [...BMI_FORM_PROPERTIES],
+    };
+  },
+  methods: {
+    submitForm() {
+      this.$emit('formData', this.formValues); // Emit form data to parent
+    },
+  },
+};
+</script>
+
+
+//another
+
+<template>
+  <div>
+    <b-form @submit.prevent="submitForm">
+      <b-row cols="3">
+        <b-col v-for="(formComponent, id) in formComponents" :key="id">
+          <common-text-input
+            :is="formComponent.componentName"
+            :key="id"
+            :item="formComponent"
+            @input="handleInput(id, $event)"
+          />
+        </b-col>
+      </b-row>
+    </b-form>
+  </div>
+</template>
+
+<script>
+  import CommonTextInput from './CommonTextInput.vue';
+  import { BMI_FORM_PROPERTIES, BMI_FORM_TEMPLATE } from './recipeBMITextInput.js';
+
+  export default {
+    name: 'BMIForm',
+    components: {
+      CommonTextInput,
+    },
+    data() {
+      return {
+        formValues: { ...BMI_FORM_TEMPLATE },
+        formComponents: [...BMI_FORM_PROPERTIES],
+      };
+    },
+    methods: {
+      handleInput(id, value) {
+        const key = id < 3 ? 'person1' : 'person2'; // Determine person1 or person2 based on index
+        const field = this.formComponents[id].data.saveAs; // Get field name (name, weight, height)
+        this.formValues[key][field] = value;
+      },
+      submitForm() {
+        this.$emit('formData', this.formValues); // Emit form values to parent component
+      },
+    },
+  };
+</script>

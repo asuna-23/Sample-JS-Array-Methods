@@ -1,0 +1,214 @@
+<template>
+  <b-container>
+    <!-- Alert for invalid form submission -->
+    <b-alert
+      variant="danger"
+      dismissible
+      v-if="showFormAlert"
+      @dismissed="hideFormAlert"
+    >
+      All fields must be filled out before proceeding!
+    </b-alert>
+
+    <BMIForm v-model="formValues" @formData="handleFormData"></BMIForm>
+
+    <div v-for="(btn, id) in buttons" :key="id">
+      <common-button :is="btn.componentName" :key="id" :item="btn" @click="handleClick(btn.events.actionName)" />
+    </div>
+
+    <!-- BMI Comparison component, visible when comparing -->
+    <BMIComparison v-if="showComparison" :persons="BMI_RESULTS"></BMIComparison>
+
+    <!-- Separate alert for BMI comparison result -->
+    <b-alert
+      variant="info"
+      dismissible
+      v-if="showBMIAlert"
+      @dismissed="hideBMIAlert"
+    >
+      {{ bmiComparisonMessage }}
+    </b-alert>
+  </b-container>
+</template>
+
+<script>
+import BMIForm from "./BMIForm.vue";
+import BMIComparison from "./BMIComparison.vue";
+import CommonButton from "./CommonButton.vue";
+import { BMI_BUTTONS } from "./recipeBMIButtons.js";
+import { BMI_RESULTS, BMI_FORM_TEMPLATE } from "./bmiData.js";
+
+export default {
+  name: "BMIConverter",
+  components: {
+    BMIForm,
+    BMIComparison,
+    CommonButton,
+  },
+  data() {
+    return {
+      formValues: { ...BMI_FORM_TEMPLATE }, // Form data
+      BMI_RESULTS: { ...BMI_RESULTS }, // BMI result data
+      buttons: [...BMI_BUTTONS],
+      showComparison: false, // Toggle comparison view
+      showFormAlert: false, // Show alert if form validation fails
+      showBMIAlert: false, // Show alert after comparison
+      bmiComparisonMessage: "", // BMI comparison message
+    };
+  },
+  methods: {
+    handleClick(action) {
+      if (this.validateForm()) {
+        if (action === "compute") {
+          this.computeBMI();
+        } else if (action === "compare") {
+          this.compareBMI();
+        }
+      } else {
+        this.showFormAlert = true; // Show form alert if validation fails
+      }
+    },
+    validateForm() {
+      // Check if all fields are filled
+      return (
+        this.formValues.person1.name &&
+        this.formValues.person1.weight &&
+        this.formValues.person1.height &&
+        this.formValues.person2.name &&
+        this.formValues.person2.weight &&
+        this.formValues.person2.height
+      );
+    },
+    computeBMI() {
+      // Compute BMI for each person (use your existing logic here)
+      console.log("Compute BMI for each person:", this.formValues);
+    },
+    compareBMI() {
+      this.showComparison = true;
+      this.showBMIAlert = true; // Show BMI comparison alert
+      // Logic for comparing BMIs and setting a comparison message
+      const bmi1 = this.formValues.person1.weight / (this.formValues.person1.height / 100) ** 2;
+      const bmi2 = this.formValues.person2.weight / (this.formValues.person2.height / 100) ** 2;
+
+      this.bmiComparisonMessage =
+        bmi1 > bmi2
+          ? `${this.formValues.person1.name} has a higher BMI than ${this.formValues.person2.name}.`
+          : `${this.formValues.person2.name} has a higher BMI than ${this.formValues.person1.name}.`;
+    },
+    handleFormData(formData) {
+      this.formValues = formData; // Update form values
+    },
+    hideFormAlert() {
+      this.showFormAlert = false; // Hide form validation alert
+    },
+    hideBMIAlert() {
+      this.showBMIAlert = false; // Hide BMI comparison alert
+    },
+  },
+};
+</script>
+
+
+//another
+<template>
+  <b-container>
+    <!-- Render the BMIForm component and capture the form data on submission -->
+    <BMIForm @formData="handleFormData" />
+
+    <!-- Render buttons dynamically using the BMI_BUTTONS recipe -->
+    <div v-for="(btn, id) in buttons" :key="id">
+      <common-button :is="btn.componentName" :key="id" :item="btn" @buttonClick="handleButtonClick(btn.events.actionName)" />
+    </div>
+
+    <!-- Render BMIComparison, passing the BMI results as props -->
+    <BMIComparison v-if="showComparison" :persons="bmiResults" />
+
+    <!-- Dismissable alert to show which person has the higher BMI -->
+    <b-alert v-if="showAlert" variant="danger" dismissible @dismissed="showAlert = false">
+      {{ higherBMIMessage }}
+    </b-alert>
+  </b-container>
+</template>
+
+<script>
+  import BMIForm from './BMIForm.vue';
+  import BMIComparison from './BMIComparison.vue';
+  import CommonButton from './CommonButton.vue';
+  import { BMI_BUTTONS } from './recipeBMIButtons.js';
+  import { BMI_RESULTS } from './recipeBMITextInput.js';
+
+  export default {
+    name: 'BMIConverter',
+    components: {
+      BMIForm,
+      BMIComparison,
+      CommonButton,
+    },
+    data() {
+      return {
+        formData: {},
+        bmiResults: { ...BMI_RESULTS },
+        showComparison: false,
+        showAlert: false,
+        higherBMIMessage: '',
+        buttons: [...BMI_BUTTONS],
+      };
+    },
+    methods: {
+      handleFormData(data) {
+        this.formData = data;
+      },
+      handleButtonClick(actionName) {
+        if (actionName === 'compute') {
+          this.computeBMI();
+        } else if (actionName === 'compare') {
+          this.compareBMI();
+        }
+      },
+      computeBMI() {
+        const { person1, person2 } = this.formData;
+
+        // Compute BMI for both persons
+        this.bmiResults.person1.bmi = this.calculateBMI(person1.weight, person1.height);
+        this.bmiResults.person1.classification = this.getBMIClassification(this.bmiResults.person1.bmi);
+        this.bmiResults.person1.name = person1.name;
+
+        this.bmiResults.person2.bmi = this.calculateBMI(person2.weight, person2.height);
+        this.bmiResults.person2.classification = this.getBMIClassification(this.bmiResults.person2.bmi);
+        this.bmiResults.person2.name = person2.name;
+
+        // Log the BMI results to the console
+        console.log(this.bmiResults);
+      },
+      compareBMI() {
+        this.computeBMI();
+        this.showComparison = true;
+
+        const bmi1 = parseFloat(this.bmiResults.person1.bmi);
+        const bmi2 = parseFloat(this.bmiResults.person2.bmi);
+
+        if (bmi1 > bmi2) {
+          this.higherBMIMessage = `${this.bmiResults.person1.name} has a higher BMI.`;
+        } else if (bmi2 > bmi1) {
+          this.higherBMIMessage = `${this.bmiResults.person2.name} has a higher BMI.`;
+        } else {
+          this.higherBMIMessage = 'Both persons have the same BMI.';
+        }
+
+        this.showAlert = true;
+      },
+      calculateBMI(weight, height) {
+        const heightInMeters = height / 100;
+        return (weight / (heightInMeters * heightInMeters)).toFixed(2);
+      },
+      getBMIClassification(bmi) {
+        if (bmi < 18.5) return 'Underweight';
+        else if (bmi >= 18.5 && bmi < 24.9) return 'Normal weight';
+        else if (bmi >= 25 && bmi < 29.9) return 'Overweight';
+        else return 'Obese';
+      },
+    },
+  };
+</script>
+
+
