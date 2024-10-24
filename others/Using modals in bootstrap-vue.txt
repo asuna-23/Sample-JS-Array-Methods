@@ -1,0 +1,100 @@
+<template>
+	<b-container>
+		<b-button @click="showModal('transfer-money-modal')">Transfer Money</b-button>
+		<b-button @click="showModal('loan-money-modal')">Loan Money</b-button>
+		<b-button @click="showModal('close-account-modal')">Close Account</b-button>
+
+		<common-modal 
+			v-for="modal in theModals" 
+			:key="modal.directives.ref" 
+			:item="modal"
+			@submit-form="handleFormSubmit(modal.directives.ref)"
+		>
+			<!-- Dynamically inject forms based on the modal -->
+			<template v-if="modal.directives.ref === 'transfer-money-modal'">
+				<b-form @submit.prevent="transferMoney">
+					<common-text-input label="Account Number" v-model="form.transfer.accountNumber" />
+					<common-text-input label="Amount" v-model="form.transfer.amount" />
+					<!-- Additional Transfer Money fields -->
+				</b-form>
+			</template>
+
+			<template v-if="modal.directives.ref === 'loan-money-modal'">
+				<b-form @submit.prevent="loanMoney">
+					<common-text-input label="Loan Amount" v-model="form.loan.amount" />
+					<!-- Additional Loan Money fields -->
+				</b-form>
+			</template>
+
+			<template v-if="modal.directives.ref === 'close-account-modal'">
+				<b-form @submit.prevent="closeAccount">
+					<common-text-input label="Account Number" v-model="form.close.accountNumber" />
+					<!-- Additional Close Account fields -->
+				</b-form>
+			</template>
+		</common-modal>
+	</b-container>
+</template>
+
+<script>
+import CommonModal from "@/path";
+import CommonTextInput from "@/path";
+import { MODAL_PROPERTIES } from "@/path";
+
+export default {
+	name: 'MainPage.vue',
+	components: {
+		CommonModal,
+		CommonTextInput,
+	},
+	data() {
+		return {
+			theModals: MODAL_PROPERTIES,
+			form: {
+				transfer: {
+					accountNumber: '',
+					amount: '',
+				},
+				loan: {
+					amount: '',
+				},
+				close: {
+					accountNumber: '',
+				}
+			}
+		}
+	},
+	methods: {
+		showModal(modalRef) {
+			this.$refs[modalRef].show();
+		},
+		handleFormSubmit(modalRef) {
+			switch(modalRef) {
+				case 'transfer-money-modal':
+					this.transferMoney();
+					break;
+				case 'loan-money-modal':
+					this.loanMoney();
+					break;
+				case 'close-account-modal':
+					this.closeAccount();
+					break;
+				default:
+					break;
+			}
+		},
+		transferMoney() {
+			// Add logic to transfer money
+			console.log("Transferring money:", this.form.transfer);
+		},
+		loanMoney() {
+			// Add logic for loan money
+			console.log("Loaning money:", this.form.loan);
+		},
+		closeAccount() {
+			// Add logic for closing account
+			console.log("Closing account:", this.form.close);
+		}
+	}
+}
+</script>
