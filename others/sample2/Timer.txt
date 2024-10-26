@@ -1,0 +1,114 @@
+<template>
+  <div class="app">
+    <div v-if="!isLoggedIn" class="login">
+      <h2>Please Login</h2>
+      <button @click="login">Login</button>
+    </div>
+    
+    <div v-else class="logout">
+      <h2>Welcome, User!</h2>
+      <div class="timer">
+        <h2>Session Countdown</h2>
+        <div class="time-display">
+          <span>{{ minutes }}:{{ seconds }}</span>
+        </div>
+      </div>
+      <button @click="logout">Logout</button>
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      isLoggedIn: false,
+      totalTime: 300, // 5 minutes in seconds
+      remainingTime: 300, // Time left to count down
+      timer: null,
+      isRunning: false,
+    };
+  },
+  computed: {
+    minutes() {
+      return Math.floor(this.remainingTime / 60)
+        .toString()
+        .padStart(2, '0');
+    },
+    seconds() {
+      return (this.remainingTime % 60).toString().padStart(2, '0');
+    },
+  },
+  methods: {
+    login() {
+      this.isLoggedIn = true;
+      this.startTimer(); // Start the timer upon login
+    },
+    logout() {
+      this.isLoggedIn = false;
+      this.resetTimer(); // Reset and stop the timer upon logout
+    },
+    startTimer() {
+      if (!this.isRunning && this.remainingTime > 0) {
+        this.isRunning = true;
+        this.timer = setInterval(() => {
+          if (this.remainingTime > 0) {
+            this.remainingTime--;
+          } else {
+            this.autoLogout(); // Auto logout when time reaches 0
+          }
+        }, 1000);
+      }
+    },
+    resetTimer() {
+      this.stopTimer();
+      this.remainingTime = this.totalTime; // Reset to initial 5 minutes
+      this.isRunning = false;
+    },
+    stopTimer() {
+      clearInterval(this.timer); // Clear the timer
+
+      /* if (this.timer) {
+        
+		clearInterval(this.timer); // Clear the timer
+        
+		this.timer = null;
+      } */
+    },
+
+// Can remove this, and just simply use the logout() instead
+    autoLogout() {
+      this.stopTimer(); // Stop the timer
+      alert("Session expired. Logging out...");
+      this.logout(); // Auto logout the user
+    },
+  },
+
+//can remove this, this ensures that the timer is cleared when changing components in the app
+  beforeDestroy() {
+    this.stopTimer(); // Make sure the timer is cleared when the component is destroyed
+  },
+};
+</script>
+
+<style scoped>
+.app {
+  text-align: center;
+}
+.login, .logout {
+  margin: 20px;
+}
+.timer {
+  margin: 10px 0;
+  font-family: Arial, sans-serif;
+}
+.time-display {
+  font-size: 2rem;
+  margin: 10px 0;
+}
+button {
+  margin: 10px;
+  padding: 10px 20px;
+  font-size: 1rem;
+}
+</style>
