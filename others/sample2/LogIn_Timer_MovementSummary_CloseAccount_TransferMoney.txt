@@ -1,0 +1,411 @@
+<template>
+  <div class="app">
+    <!-- Login Form -->
+    <div v-if="!isLoggedIn" class="login">
+      <h2>Please Login</h2>
+      <form @submit.prevent="login">
+        <div>
+          <label for="username">Username:</label>
+          <input type="text" v-model="form.username" required />
+        </div>
+        <div>
+          <label for="pin">PIN:</label>
+          <input type="password" v-model="form.pin" required />
+        </div>
+        <button type="submit">Login</button>
+        <p v-if="loginError" class="error">{{ loginError }}</p>
+      </form>
+    </div>
+
+    <!-- Timer, Account Info, and Logout Section -->
+    <div v-else class="logout">
+      <h2>Welcome, {{ currentAccount.owner }}!</h2>
+      <div class="timer">
+        <h2>Session Countdown</h2>
+        <div class="time-display">
+          <span>{{ minutes }}:{{ seconds }}</span>
+        </div>
+      </div>
+
+      <!-- Display balance, incomes, outgoings, and interest -->
+      <div class="account-summary">
+        <h3>Account Summary</h3>
+        <p><strong>Balance:</strong> {{ balance }} {{ currency }}</p>
+        <p><strong>Total Income:</strong> {{ incomes }} {{ currency }}</p>
+        <p><strong>Total Outgoing:</strong> {{ outgoings }} {{ currency }}</p>
+        <p><strong>Interest Earned:</strong> {{ interest }} {{ currency }}</p>
+      </div>
+
+      <!-- Display Movements -->
+      <div class="movements">
+        <h3>Recent Transactions</h3>
+        <div class="sort-options">
+          <button @click="sortMovements('date')">Sort by Date</button>
+          <button @click="sortMovements('amount')">Sort by Amount</button>
+        </div>
+        <ul>
+          <li v-for="(movement, index) in currentAccount.movements" :key="index">
+            <span>{{ movement.movementValue }} {{ currency }}</span> - 
+            <span>{{ formatMovementDate(movement.movementDate) }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Transfer Funds Form -->
+      <div>
+        <form @submit.prevent="transferFunds">
+          <h2>Transfer Funds</h2>
+          <div>
+            <label for="recipientUsername">Recipient Username:</label>
+            <input v-model="transferForm.recipientUsername" id="recipientUsername" type="text" required />
+          </div>
+          <div>
+            <label for="transferAmount">Amount:</label>
+            <input v-model="transferForm.amount" id="transferAmount" type="number" min="0" required />
+          </div>
+          <button type="submit">Transfer</button>
+          <p v-if="transferError" class="error">{{ transferError }}</p>
+        </form>
+      </div>
+
+      <button @click="logout">Logout</button>
+
+      <!-- Account Closure Form -->
+      <div class="close-account">
+        <h3>Close Account</h3>
+        <form @submit.prevent="closeAccount">
+          <div>
+            <label for="close-username">Username:</label>
+            <input v-model="form.username" id="close-username" type="text" required /> 
+          </div>
+          <div>
+            <label for="close-pin">PIN:</label>
+            <input v-model="form.pin" id="close-pin" type="password" required /> 
+          </div>
+          <button type="submit">Close Account</button>
+          <p v-if="closeError" class="error">{{ closeError }}</p>
+        </form>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ACCOUNTS } from "./common/rBankAccounts"; // Import the existing accounts
+
+export default {
+  data() {
+    return {
+      isLoggedIn: false,
+      totalTime: 300, // 5 minutes in seconds
+      remainingTime: 300, // Time left to count down
+      timer: null,
+      isRunning: false,
+      existingAccounts: [...JSON.parse(JSON.stringify(ACCOUNTS))],
+      currentAccount: null, // Store the logged-in account details
+      form: {
+        username: "",
+        pin: ""
+      },
+      transferForm: {
+        recipientUsername: "",
+        amount: null
+      },
+      loginError: "", // Error message for incorrect login
+      closeError: "", // Error message for account closure
+      transferError: "", // Error message for transfer
+      balance: 0, // 
+      incomes: 0, // 
+      outgoings: 0, // 
+      interest: 0, //
+      currency: null
+    };
+
+  },
+  computed: {
+    minutes() {
+      return Math.floor(this.remainingTime / 60)
+        .toString()
+        .padStart(2, "0");
+    },
+    seconds() {
+      return (this.remainingTime % 60).toString().padStart(2, "0");
+    }
+  },
+  methods: {
+    validateAccount() {
+      // Find the account with matching username and pin
+      const account = this.existingAccounts.find(
+        acc => acc.username === this.form.username && acc.pin === this.form.pin
+      );
+      if (account) {
+        this.currentAccount = account; // Set the matched account
+        this.formatCurrency();
+        this.calculateMovements(); // Calculate balance, incomes, and outgoings, interest
+        return true;
+      } else {
+        this.loginError = "Invalid username or pin."; // Set error message if no match
+        return false;
+      }
+    },
+    login() {
+      // Validate the account
+      if (this.validateAccount()) {
+        this.isLoggedIn = true;
+        this.loginError = "";
+        this.closeError = "";
+        this.transferError = ""; 
+        this.startTimer(); // Start the timer upon login
+
+        // Clear form values
+        this.form.username = ""; 
+        this.form.pin = ""; // 
+
+        // Call the function to calculate all movements
+        // this.calculateMovements();
+      }
+    },
+    formatCurrency() {
+      //const currencySymbol = new Intl.NumberFormat(this.currentAccount.locale, {
+      //  style: 'currency',
+      //  currency: this.currentAccount.currency,
+      //})
+
+      //const currencyParts = new Intl.NumberFormat(this.currentAccount.locale, {
+      //  style: 'currency',
+      //  currency: this.currentAccount.currency,
+      //}).formatToParts(0); // Format a dummy value (0) to get the currency parts
+
+      // Find the part that has the type 'currency'
+      //const currencySymbol = currencyParts.find(part => part.type === 'currency')?.value;
+
+        const currencySymbol = new Intl.NumberFormat(this.currentAccount.locale, {
+          style: 'currency',
+          currency: this.currentAccount.currency,
+        }).formatToParts(0).find(part => part.type === 'currency').value;
+
+      this.currency = currencySymbol
+    },
+
+  // Method to calculate balance, incomes, outgoings, and interest
+  calculateMovements() {
+    const movements = this.currentAccount.movements;
+
+    // Calculate total balance
+    const balance = movements.reduce((acc, curr) => acc + curr.movementValue, 0);
+    // this.balance = this.formatCurrency(balance);
+    this.balance = balance
+    
+    // Calculate total incomes (deposits)
+    const incomes = movements
+      .filter(mov => mov.movementType === 'deposit')
+      .reduce((acc, curr) => acc + curr.movementValue, 0);
+    // this.incomes = this.formatCurrency(incomes);
+
+    this.incomes = incomes
+    
+    // Calculate total outgoings (withdrawals)
+    const outgoings = movements
+      .filter(mov => mov.movementType === 'withdrawal')
+      .reduce((acc, curr) => acc + Math.abs(curr.movementValue), 0);
+    // this.outgoings = this.formatCurrency(outgoings);
+
+    this.outgoings = outgoings
+    
+    // Calculate total interest on deposits
+    const interest = movements
+      .filter(mov => mov.movementType === 'deposit')
+      .reduce((acc, curr) => acc + (curr.movementValue * this.currentAccount.interest) / 100, 0);
+    // this.interest = this.formatCurrency(interest);
+
+    this.interest = interest
+  },
+    formatMovementDate(date) {
+      const movementDate = new Date(date);
+      const today = new Date();
+      
+      // Difference in milliseconds
+      const diffInMs = today - movementDate;
+      
+      // Calculate difference in days
+      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+      // Handle different cases for the date difference
+      if (diffInDays === 0) {
+        return `Today (${today.toLocaleDateString()})`;
+      } else if (diffInDays === 1) {
+        return `Yesterday`;
+      } else if (diffInDays < 7) {
+        return `${diffInDays} days ago`;
+      } else if (diffInDays < 30) {
+        const weeksAgo = Math.floor(diffInDays / 7);
+        return `${weeksAgo} week${weeksAgo > 1 ? 's' : ''} ago`;
+      } else if (diffInDays < 365) {
+        const monthsAgo = Math.floor(diffInDays / 30.44); // Approximate average days per month
+        return `${monthsAgo} month${monthsAgo > 1 ? 's' : ''} ago`;
+      } else {
+        const yearsAgo = Math.floor(diffInDays / 365.25); // Accounts for leap years
+        return `${yearsAgo} year${yearsAgo > 1 ? 's' : ''} ago`;
+      }
+    },
+    transferFunds() {
+    const { recipientUsername, amount } = this.transferForm;
+
+    if (amount <= 0) {
+    this.resetTransferForm()
+        return this.transferError = "Please enter a valid transfer amount greater than zero.";
+        
+    }
+    if (recipientUsername === this.currentAccount.username) {
+    this.resetTransferForm()
+     return this.transferError = "Transferring into your own account is not allowed.";   
+    }
+
+    if (this.balance < amount) {
+    this.resetTransferForm()
+        return this.transferError = "Insufficient balance for this transfer.";
+        
+    }
+
+    const recipientAccount = this.findAccount(recipientUsername);
+    if (!recipientAccount) return;
+
+    this.performTransfer(recipientAccount, amount);
+    this.resetTransferForm();
+    alert(`Successfully transferred ${this.currency} ${amount} to ${recipientAccount.owner}.`);
+
+},
+
+validateTransferInputs(amount, recipientUsername) {
+    if (amount <= 0) {
+        this.transferError = "Please enter a valid transfer amount greater than zero.";
+        return false;
+    }
+    if (recipientUsername === this.currentAccount.username) {
+        this.transferError = "You cannot transfer money to your own account.";
+        return false;
+    }
+    return true;
+},
+
+findAccount(username) {
+    const account = this.existingAccounts.find(acc => acc.username === username);
+    if (!account) {
+        this.transferError = "Invalid account username or PIN.";
+    }
+    return account;
+},
+
+performTransfer(recipientAccount, amount) {
+   
+    this.balance -= amount;
+    this.currentAccount.movements.push({ movementType: "withdrawal", movementDate: new Date().toLocaleDateString(), movementValue: -amount });
+    recipientAccount.movements.push({ movementType: "deposit", movementDate: new Date().toLocaleDateString(), movementValue: amount });
+
+    this.calculateMovements();  
+    return true  
+},
+
+resetTransferForm() {
+    this.transferForm.recipientUsername = "";
+    this.transferForm.amount = null;
+    this.transferError = null;
+},
+
+    
+    closeAccount() {
+  const confirmation = confirm("Are you sure you want to close your account?");
+  if (confirmation) {
+    // Check if the form values match the current account's username and pin
+    if (this.form.username === this.currentAccount.username && this.form.pin === this.currentAccount.pin) {
+      const accountIndex = this.existingAccounts.indexOf(this.currentAccount);
+      if (accountIndex !== -1) {
+        this.existingAccounts.splice(accountIndex, 1); // Remove the account from the existing accounts
+        alert("Your account has been closed successfully.");
+        this.logout(); // Logout after account closure
+        // Clear the form values after closing the account
+        this.form.username = ""; // Clear the username field
+        this.form.pin = ""; // Clear the PIN field
+      } else {
+        alert("Account not found.");
+      }
+    } else {
+      alert("Username or PIN is incorrect. Please try again.");
+    }
+  }
+},
+
+    logout() {
+      this.isLoggedIn = false;
+      this.resetTimer(); // Reset and stop the timer upon logout
+      this.form.username = ""; // Clear form input fields
+      this.form.pin = "";
+      this.currentAccount = null; // Clear the current account details
+      this.balance = 0;
+      this.incomes = 0;
+      this.outgoings = 0;
+
+      this.loginError = "";
+        this.closeError = "";
+        this.transferError = ""; 
+    },
+
+    startTimer() {
+      if (!this.isRunning && this.remainingTime > 0) {
+        this.isRunning = true;
+        this.timer = setInterval(() => {
+          if (this.remainingTime > 0) {
+            this.remainingTime--;
+          } else {
+            this.logout(); // Auto logout when time reaches 0
+          }
+        }, 1000);
+      }
+    },
+    resetTimer() {
+      this.stopTimer();
+      this.remainingTime = this.totalTime; // Reset to initial 5 minutes
+      this.isRunning = false;
+    },
+    stopTimer() {
+      clearInterval(this.timer); // Clear the timer
+    },
+
+
+    sortMovements(criteria) {
+      if (criteria === 'date') {
+        this.currentAccount.movements.sort((a, b) => new Date(b.movementDate) - new Date(a.movementDate));
+      } else if (criteria === 'amount') {
+        this.currentAccount.movements.sort((a, b) => a.movementValue - b.movementValue);
+      }
+      // Refresh the account movements display after sorting
+      this.calculateMovements();
+    },
+  },
+};
+</script>
+
+<style scoped>
+.app {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+.login, .logout {
+  margin-bottom: 20px;
+}
+.error {
+  color: red;
+}
+.timer {
+  margin-bottom: 20px;
+}
+.movements {
+  margin-bottom: 20px;
+}
+.close-account {
+  margin-top: 20px;
+}
+</style>
