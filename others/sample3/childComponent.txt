@@ -1,0 +1,43 @@
+// MapComponent
+<template>
+  <div id="map" style="height: 100vh;"></div>
+</template>
+
+<script>
+import L from 'leaflet';
+
+export default {
+  props: ['workouts', 'addMarker', 'mapEvent'],
+  data() {
+    return {
+      map: null,
+    };
+  },
+  mounted() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(this.loadMap, () => {
+        alert('Could not get your location');
+      });
+    }
+  },
+  methods: {
+    loadMap(position) {
+      const { latitude, longitude } = position.coords;
+      const coords = [latitude, longitude];
+
+      this.map = L.map('map').setView(coords, 17);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+
+      this.map.on('click', this.showForm);
+
+      // Add existing workout markers
+      this.workouts.forEach(workout => {
+        this.addMarker(workout);
+      });
+    },
+    showForm(e) {
+      this.$emit('map-click', e);
+    }
+  }
+};
+</script>

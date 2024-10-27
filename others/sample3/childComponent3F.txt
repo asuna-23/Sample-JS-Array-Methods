@@ -1,0 +1,60 @@
+//WorkoutForm
+
+<template>
+  <b-form @submit.prevent="submitWorkout">
+    <b-form-group label="Type">
+      <b-form-select v-model="type" :options="['running', 'cycling']"></b-form-select>
+    </b-form-group>
+
+    <b-form-group label="Distance (km)">
+      <b-form-input v-model="distance" type="number" required placeholder="Enter distance"></b-form-input>
+    </b-form-group>
+
+    <b-form-group label="Duration (min)">
+      <b-form-input v-model="duration" type="number" required placeholder="Enter duration"></b-form-input>
+    </b-form-group>
+
+    <b-form-group label="Cadence (spm)" v-if="type === 'running'">
+      <b-form-input v-model="cadence" type="number" placeholder="Enter cadence"></b-form-input>
+    </b-form-group>
+
+    <b-form-group label="Elevation (m)" v-if="type === 'cycling'">
+      <b-form-input v-model="elevation" type="number" placeholder="Enter elevation"></b-form-input>
+    </b-form-group>
+
+    <b-button type="submit" variant="primary">OK</b-button>
+  </b-form>
+</template>
+
+<script>
+export default {
+  props: ['mapEvent', 'addWorkout'],
+  data() {
+    return {
+      type: 'running',
+      distance: null,
+      duration: null,
+      cadence: null,
+      elevation: null,
+    };
+  },
+  methods: {
+    submitWorkout() {
+      const workout = {
+        type: this.type,
+        distance: this.distance,
+        duration: this.duration,
+        coords: [this.mapEvent.latlng.lat, this.mapEvent.latlng.lng],
+      };
+
+      if (this.type === 'running') {
+        workout.cadence = this.cadence;
+      } else {
+        workout.elevation = this.elevation;
+      }
+
+      this.addWorkout(workout);
+    }
+  }
+};
+</script>

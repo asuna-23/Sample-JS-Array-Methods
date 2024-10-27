@@ -1,0 +1,34 @@
+//WorkoutList
+
+<template>
+  <ul class="workouts">
+    <li v-for="workout in workouts" :key="workout.id" @click="moveToWorkout(workout)">
+      <b-card>
+        <h5>{{ workout.description }}</h5>
+        <b-card-text>
+          Distance: {{ workout.distance }} km <br />
+          Duration: {{ workout.duration }} min <br />
+          <span v-if="workout.type === 'running'">
+            Pace: {{ workout.pace.toFixed(2) }} min/km <br />
+            Cadence: {{ workout.cadence }} spm
+          </span>
+          <span v-if="workout.type === 'cycling'">
+            Speed: {{ workout.speed.toFixed(2) }} km/h <br />
+            Elevation: {{ workout.elevation }} m
+          </span>
+        </b-card-text>
+      </b-card>
+    </li>
+  </ul>
+</template>
+
+<script>
+export default {
+  props: ['workouts'],
+  methods: {
+    moveToWorkout(workout) {
+      this.$emit('move-to-workout', workout);
+    }
+  }
+};
+</script>

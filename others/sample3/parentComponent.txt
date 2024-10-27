@@ -1,0 +1,48 @@
+npm install leaflet
+
+
+@import 'leaflet/dist/leaflet.css'; 	// import in the parent
+
+// parent component
+<template>
+  <div>
+    <WorkoutForm :mapEvent="mapEvent" @addWorkout="addWorkout" />
+    <WorkoutList :workouts="workouts" @move-to-workout="moveToWorkout" />
+    <MapComponent :workouts="workouts" @map-click="showForm" />
+  </div>
+</template>
+
+<script>
+import WorkoutForm from './WorkoutForm.vue';
+import WorkoutList from './WorkoutList.vue';
+import MapComponent from './MapComponent.vue';
+
+export default {
+  components: { WorkoutForm, WorkoutList, MapComponent },
+  data() {
+    return {
+      mapEvent: null,
+      workouts: []
+    };
+  },
+  methods: {
+    showForm(e) {
+      this.mapEvent = e;
+    },
+    addWorkout(workout) {
+      if (workout.type === 'running') {
+        workout.pace = workout.duration / workout.distance;
+      } else {
+        workout.speed = workout.distance / (workout.duration / 60);
+      }
+      workout.id = Date.now();
+      workout.description = `${workout.type[0].toUpperCase() + workout.type.slice(1)} on ${new Date().toLocaleDateString()}`;
+      this.workouts.push(workout);
+    },
+    moveToWorkout(workout) {
+      // Move map to the selected workout's location
+    }
+  }
+};
+</script>
+
