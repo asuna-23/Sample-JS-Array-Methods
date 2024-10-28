@@ -1,0 +1,29 @@
+// call reset in each function needed 
+
+ startTimer() {
+      if (!this.isRunning && this.remainingTime > 0) {
+        this.isRunning = true;
+        this.timer = setInterval(() => {
+          if (this.remainingTime > 0) {
+            this.remainingTime--;
+          } else {
+            this.logout(); // Auto logout when time reaches 0
+          }
+        }, 1000);
+      }
+    },
+    resetTimer() {
+      this.stopTimer();
+      this.remainingTime = this.totalTime; // Reset to initial 5 minutes
+      this.isRunning = false;
+    },
+    stopTimer() {
+      clearInterval(this.timer); // Clear the timer
+      this.remainingTime = this.totalTime //
+      this.isRunning = false  //
+    },
+
+    resetTimerMovement() {
+      this.stopTimer()
+      this.startTimer(); // Restart the timer
+    },
