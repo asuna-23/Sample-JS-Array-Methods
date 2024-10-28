@@ -1,0 +1,47 @@
+isSorted: false,
+originalMovements: []
+
+/*sortMovements() {
+      if (!this.isSorted) {
+        // Sort in ascending order (smallest to largest)
+        this.currentAccount.movements.sort((a, b) => a.movementValue - b.movementValue);
+      } else {
+        // Sort in descending order (largest to smallest)
+        this.currentAccount.movements.sort((a, b) => b.movementValue - a.movementValue);
+      }
+      // Toggle the sorting state
+      this.isSorted = !this.isSorted;
+    },
+    */
+
+    sortMovements() {
+      if (!this.isSorted) {
+        // Sort by movement value
+        this.currentAccount.movements.sort((a, b) => b.movementValue - a.movementValue);
+      } else {
+        // Restore original order of movements
+        this.currentAccount.movements = [...this.originalMovements];
+      }
+      this.isSorted = !this.isSorted; // Toggle the sort state
+    },
+
+    /* const movs = this.isSort 
+        ? [...this.currentAccount.movements].sort((a, b) => b.movementValue - a.movementValue)
+        : this.currentAccount.movements;
+
+      return movs;
+    */
+
+performTransfer() {
+	const withdrawalTransaction = { movementType: "withdrawal", movementDate: new Date().toLocaleDateString(), movementValue: -amount };
+
+    this.currentAccount.movements.unshift(withdrawalTransaction);
+
+    this.originalMovements.unshift(withdrawalTransaction);
+}
+
+requestLoan() {
+	const loanTransaction = { movementType: 'deposit', movementDate: new Date().toLocaleDateString(), movementValue: amount };
+    this.currentAccount.movements.unshift(loanTransaction);
+    this.originalMovements.unshift(loanTransaction);
+}
