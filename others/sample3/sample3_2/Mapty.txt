@@ -1,0 +1,451 @@
+// MapTrack.vue
+
+<template>
+  <main class="map-track">
+    <div class="sidebar">
+      <img src="../assets/map-logo.png" alt="MapTrack Logo" class="logo" />
+
+      <ul class="workouts">
+        <b-form
+          @submit.prevent="createWorkout"
+          class="workout-form"
+          :class="{ hidden: hideForm }"
+        >
+          <div class="form__row">
+            <label class="form__label">Type</label>
+            <select
+              @change="toggleElevation = !toggleElevation"
+              class="form__input form__input--type"
+              ref="workoutType"
+            >
+              <option value="running">Running</option>
+              <option value="cycling">Cycling</option>
+            </select>
+          </div>
+
+          <div class="form__row">
+            <label class="form__label">Distance (km)</label>
+            <input
+              type="number"
+              class="form__input form__input--distance"
+              placeholder="e.g. 5"
+              ref="distance"
+            />
+          </div>
+
+          <div class="form__row">
+            <label class="form__label">Duration (min)</label>
+            <input
+              type="number"
+              class="form__input form__input--duration"
+              placeholder="e.g. 30"
+              ref="duration"
+            />
+          </div>
+
+          <div class="form__row" v-if="!toggleElevation">
+            <label class="form__label">Cadence (spm)</label>
+            <input
+              type="number"
+              class="form__input form__input--cadence"
+              placeholder="e.g. 80"
+              ref="cadence"
+            />
+          </div>
+
+          <div class="form__row" v-if="toggleElevation">
+            <label class="form__label">Elevation Gain (m)</label>
+            <input
+              type="number"
+              class="form__input form__input--elevation"
+              placeholder="e.g. 300"
+              ref="elevation"
+            />
+          </div>
+
+          <button class="form__btn">OK</button>
+        </b-form>
+
+        <li
+          v-for="workout in workouts"
+          :key="workout.id"
+          class="workout"
+          :class="`workout--${workout.type}`"
+          @click="focusOnWorkout(workout.id)"
+          ref="workoutContainer"
+        >
+          <h2 class="workout__title">{{ workout.description }}</h2>
+          <div class="workout__details">
+            <span class="workout__icon">{{
+              workout.type === "running" ? "🏃‍♂️" : "🚴‍♀️"
+            }}</span>
+            <span class="workout__value">{{ workout.distance }}</span>
+            <span class="workout__unit">km</span>
+          </div>
+          <div class="workout__details">
+            <span class="workout__icon">⏱</span>
+            <span class="workout__value">{{ workout.duration }}</span>
+            <span class="workout__unit">min</span>
+          </div>
+
+          <div v-if="workout.type === 'running'" class="workout__details">
+            <span class="workout__icon">⚡️</span>
+            <span class="workout__value">{{ workout.pace.toFixed(1) }}</span>
+            <span class="workout__unit">min/km</span>
+          </div>
+          <div v-if="workout.type === 'running'" class="workout__details">
+            <span class="workout__icon">🦶🏼</span>
+            <span class="workout__value">{{ workout.cadence }}</span>
+            <span class="workout__unit">spm</span>
+          </div>
+
+          <div v-if="workout.type === 'cycling'" class="workout__details">
+            <span class="workout__icon">⚡️</span>
+            <span class="workout__value">{{ workout.speed.toFixed(1) }}</span>
+            <span class="workout__unit">km/h</span>
+          </div>
+          <div v-if="workout.type === 'cycling'" class="workout__details">
+            <span class="workout__icon">⛰</span>
+            <span class="workout__value">{{ workout.elevationGain }}</span>
+            <span class="workout__unit">m</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <div ref="map" id="map"></div>
+  </main>
+</template>
+
+<script>
+import { Running, Cycling } from "@/utils/WorkoutClass";
+
+export default {
+  name: "MapTrack",
+  data() {
+    return {
+      hideForm: true,
+      workouts: [],
+      toggleElevation: false,
+      mapEvent: {},
+      map: {},
+    };
+  },
+  mounted() {
+    this.getCurrentPosition();
+
+    try {
+      this.workouts = JSON.parse(localStorage.getItem("workouts")) || [];
+    } catch (error) {
+      return;
+    }
+  },
+  methods: {
+    getCurrentPosition() {
+      if (navigator.geolocation)
+        navigator.geolocation.getCurrentPosition(
+          this.handleUserLocation,
+          () => {
+            alert("Could not get your location");
+          }
+        );
+    },
+
+    handleUserLocation(position) {
+      this.initializeMap(position);
+    },
+
+    initializeMap(position) {
+      const { latitude, longitude } = position.coords;
+      const coordinates = [latitude, longitude];
+
+      this.map = L.map("map").setView(coordinates, 13);
+
+      L.tileLayer(
+        "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
+      ).addTo(this.map);
+
+      this.map.on("click", this.displayForm);
+
+      this.workouts.forEach((work) => this.addWorkoutMarker(work));
+    },
+
+    displayForm(mapEvent) {
+      this.hideForm = false;
+      this.mapEvent = mapEvent;
+    },
+
+    createWorkout() {
+      const type = this.$refs.workoutType.value;
+      const distance = parseFloat(this.$refs.distance.value);
+      const duration = parseFloat(this.$refs.duration.value);
+      const { lat, lng } = this.mapEvent.latlng;
+
+      let workout;
+
+      if (type === "running") {
+        const cadence = parseFloat(this.$refs.cadence.value);
+
+        if (![distance, duration, cadence].every(Number.isFinite)) {
+          return alert("Please enter valid numbers!");
+        }
+
+        workout = new Running([lat, lng], distance, duration, cadence);
+      } else if (type === "cycling") {
+        const elevation = parseFloat(this.$refs.elevation.value);
+
+        if (![distance, duration, elevation].every(Number.isFinite)) {
+          return alert("Please enter valid numbers!");
+        }
+
+        workout = new Cycling([lat, lng], distance, duration, elevation);
+      }
+
+      this.workouts.unshift(workout);
+
+      this.addWorkoutMarker(workout);
+      this.hideForm = true;
+      this.saveWorkoutsToLocal();
+    },
+
+    addWorkoutMarker(workout) {
+      L.marker(workout.coords)
+        .addTo(this.map)
+        .bindPopup(
+          L.popup({
+            maxWidth: 250,
+            minWidth: 100,
+            autoClose: false,
+            closeOnClick: false,
+            className: `${workout.type}-popup`,
+          })
+        )
+        .setPopupContent(
+          `${workout.type === "running" ? "🏃‍♂️" : "🚴‍♀️"} ${workout.description}`
+        )
+        .openPopup();
+    },
+
+    focusOnWorkout(workoutId) {
+      if (!this.map) return;
+
+      const workout = this.workouts.find((work) => work.id === workoutId);
+      this.map.setView(workout.coords, 13, {
+        animate: true,
+        pan: {
+          duration: 1,
+        },
+      });
+    },
+
+    saveWorkoutsToLocal() {
+      localStorage.setItem("workouts", JSON.stringify(this.workouts));
+    },
+  },
+};
+</script>
+
+<style scoped>
+.map-track {
+  position: relative;
+  font-family: "Manrope", sans-serif;
+  height: 100vh;
+  display: flex;
+}
+
+#map {
+  flex: 1;
+  height: 100%;
+}
+
+.sidebar {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  width: 590px;
+  background-color: rgba(11, 25, 44, 0.6);
+  padding: 3rem 5rem;
+  border-radius: 10px;
+  z-index: 10;
+}
+
+.logo {
+  height: 5rem;
+  margin-bottom: 3rem;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.workouts {
+  list-style: none;
+  overflow-y: auto;
+  height: calc(100vh - 8rem);
+}
+
+.workout-form {
+  background-color: var(--color-dark--2);
+  padding: 1rem 0;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.form__row {
+  margin-bottom: 0.7rem;
+}
+
+.form__input--type,
+.form__input--distance,
+.form__input--duration,
+.form__input--cadence,
+.form__input--elevation {
+  font: inherit;
+  color: #333;
+  background-color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 0.7rem 1rem;
+  display: block;
+  width: 100%;
+}
+
+.hidden {
+  display: none;
+}
+
+.form__btn {
+  padding: 1rem 2rem;
+  color: #fff;
+  background-color: var(--color-primary);
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 5px;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.workout__details {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.workout__icon {
+  margin-right: 1.5rem;
+}
+</style>
+
+<!-- <template>
+  <div class="app-container">
+    <div id="map" ref="map" class="map-container"></div>
+    <div class="sidebar">
+      <img src="logo.png" alt="Logo" class="logo" /> 
+      <WorkoutForm @new-workout="handleNewWorkout" />
+      <ul class="workouts">
+        <WorkoutItem
+          v-for="workout in workouts"
+          :key="workout.id"
+          :workout="workout"
+          @moveToPopup="moveToPopup(workout)"
+        />
+      </ul>
+    </div>
+  </div>
+</template>
+
+<script>
+import WorkoutForm from "./WorkoutForm.vue";
+import WorkoutItem from "./WorkoutItem.vue";
+import { map as Lmap, tileLayer, marker, popup } from "leaflet";
+
+export default {
+  name: "Mapty",
+  components: {
+    WorkoutForm,
+    WorkoutItem,
+  },
+  data() {
+    return {
+      map: null,
+      mapEvent: null,
+      mapZoomLevel: 13,
+      workouts: [],
+    };
+  },
+  mounted() {
+    this.loadMap();
+    navigator.geolocation.getCurrentPosition(this.loadMap, () =>
+      alert("Could not get your position")
+    );
+  },
+  methods: {
+    loadMap(position) {
+      const { latitude, longitude } = position.coords;
+      const coords = [latitude, longitude];
+      this.map = Lmap(this.$refs.map).setView(coords, this.mapZoomLevel);
+      tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(this.map);
+
+      this.map.on("click", this.showForm);
+    },
+    showForm(mapE) {
+      this.mapEvent = mapE;
+      this.$refs.workoutForm.showForm();
+    },
+    handleNewWorkout(workout) {
+      this.workouts.push(workout);
+      this.renderWorkoutMarker(workout);
+    },
+    renderWorkoutMarker(workout) {
+      marker(workout.coords)
+        .addTo(this.map)
+        .bindPopup(
+          popup({
+            maxWidth: 250,
+            minWidth: 100,
+            autoClose: false,
+            closeOnClick: false,
+            className: `${workout.type}-popup`,
+          })
+        )
+        .setPopupContent(
+          `${workout.type === "running" ? "🏃‍♂️" : "🚴‍♀️"} ${workout.description}`
+        )
+        .openPopup();
+    },
+    moveToPopup(workout) {
+      this.map.setView(workout.coords, this.mapZoomLevel, {
+        animate: true,
+        pan: { duration: 1 },
+      });
+    },
+  },
+};
+</script>
+
+<style>
+/* Make sure the map spans the entire width and height */
+.map-container {
+  width: 75vw;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 25vw;
+  height: 100vh;
+  overflow-y: auto;
+  background-color: #fff;
+  padding: 1rem;
+}
+
+.app-container {
+  display: flex;
+}
+
+.workouts {
+  list-style: none;
+  padding: 0;
+}
+</style> -->

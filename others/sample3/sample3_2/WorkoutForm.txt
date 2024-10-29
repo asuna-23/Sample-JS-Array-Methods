@@ -1,0 +1,111 @@
+<template>
+  <form @submit.prevent="submitForm" class="form">
+    <div class="form__row">
+      <label class="form__label">Type</label>
+      <select v-model="type" class="form__input form__input--type">
+        <option value="running">Running</option>
+        <option value="cycling">Cycling</option>
+      </select>
+    </div>
+    <div class="form__row">
+      <label class="form__label">Distance</label>
+      <input
+        v-model="distance"
+        class="form__input form__input--distance"
+        placeholder="km"
+      />
+    </div>
+    <div class="form__row">
+      <label class="form__label">Duration</label>
+      <input
+        v-model="duration"
+        class="form__input form__input--duration"
+        placeholder="min"
+      />
+    </div>
+
+    <div class="form__row" v-if="type === 'running'">
+      <label class="form__label">Cadence</label>
+      <input
+        v-model="cadence"
+        class="form__input form__input--cadence"
+        placeholder="step/min"
+      />
+    </div>
+
+    <div class="form__row" v-if="type === 'cycling'">
+      <label class="form__label">Elevation Gain</label>
+      <input
+        v-model="elevation"
+        class="form__input form__input--elevation"
+        placeholder="meters"
+      />
+    </div>
+
+    <button class="form__btn">OK</button>
+  </form>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      type: "running",
+      distance: "",
+      duration: "",
+      cadence: "",
+      elevation: "",
+    };
+  },
+  methods: {
+    submitForm() {
+      const { lat, lng } = this.$parent.mapEvent.latlng;
+      let workout;
+
+      if (this.type === "running") {
+        workout = {
+          type: "running",
+          coords: [lat, lng],
+          distance: this.distance,
+          duration: this.duration,
+          cadence: this.cadence,
+          description: `Running on ${new Date().toLocaleDateString()}`,
+        };
+      } else {
+        workout = {
+          type: "cycling",
+          coords: [lat, lng],
+          distance: this.distance,
+          duration: this.duration,
+          elevation: this.elevation,
+          description: `Cycling on ${new Date().toLocaleDateString()}`,
+        };
+      }
+
+      this.$emit("new-workout", workout);
+      this.resetForm();
+    },
+    resetForm() {
+      this.type = "running";
+      this.distance = "";
+      this.duration = "";
+      this.cadence = "";
+      this.elevation = "";
+    },
+    showForm() {
+      // Focus first input in form when shown
+      this.$nextTick(() => this.$refs.distance.focus());
+    },
+  },
+};
+</script>
+
+<style scoped>
+/* Form styles similar to original */
+.form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 1rem;
+}
+</style>
