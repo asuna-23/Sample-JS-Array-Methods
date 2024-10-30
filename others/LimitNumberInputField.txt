@@ -1,0 +1,141 @@
+// Restrict further input once specified max length is reached
+@ Uses @keypress
+<template>
+  <div>
+    <b-form-group label="Enter up to 10 digits:">
+      <b-form-input
+        v-model="numberInput"
+        type="number"
+        @keypress="checkLength"
+        placeholder="Enter digits"
+      />
+    </b-form-group>
+
+    <b-button @click="submitNumber" variant="primary"> Submit </b-button>
+  </div>
+</template>
+
+<script>
+import { BFormGroup, BFormInput, BButton } from "bootstrap-vue-next";
+
+export default {
+  components: {
+    BFormGroup,
+    BFormInput,
+    BButton,
+  },
+  data() {
+    return {
+      numberInput: "", // Bound to the input field
+      maxLength: 10, // Maximum allowed length
+    };
+  },
+  methods: {
+    // Method to restrict keypress after reaching max length
+    checkLength(event) {
+      if (this.numberInput.length >= this.maxLength) {
+        event.preventDefault(); // Prevent further keypresses
+      }
+    },
+    submitNumber() {
+      console.log("Number submitted:", this.numberInput);
+    },
+  },
+};
+</script>
+
+
+// Another sample, but does not work
+// Uses @input
+<template>
+  <div>
+    <b-form-group label="Enter up to 10 digits:">
+      <b-form-input
+        v-model="numberInput"
+        type="number"
+        @input="limitInputLength"
+        placeholder="Enter digits"
+      />
+    </b-form-group>
+
+    <b-button @click="submitNumber" variant="primary">Submit</b-button>
+  </div>
+</template>
+
+<script>
+import { BFormGroup, BFormInput, BButton } from "bootstrap-vue-next";
+
+export default {
+  components: {
+    BFormGroup,
+    BFormInput,
+    BButton,
+  },
+  data() {
+    return {
+      numberInput: "", // Bound to the input field
+      maxLength: 10, // Maximum allowed length
+    };
+  },
+  methods: {
+    // Method to limit input length using the @input event
+    limitInputLength(event) {
+      const inputValue = event.target.value;
+
+      // If the input exceeds the max length, truncate it
+      if (inputValue.length > this.maxLength) {
+        this.numberInput = inputValue.slice(0, this.maxLength);
+      }
+    },
+    submitNumber() {
+      console.log("Number submitted:", this.numberInput);
+    },
+  },
+};
+</script>
+
+
+// Only limits after submit
+// Uses @input
+<template>
+  <div>
+    <b-form-group label="Enter up to 10 digits:">
+      <b-form-input
+        v-model="numberInput"
+        type="number"
+        :maxlength="10"   <!-- Optional, but can help with visual cues -->
+        @input="validateInput"
+        placeholder="Enter digits"
+      />
+    </b-form-group>
+
+    <b-button @click="submitNumber" variant="primary">
+      Submit
+    </b-button>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      numberInput: ''
+    };
+  },
+  methods: {
+    validateInput(event) {
+      const inputValue = event.target.value;
+
+      // Ensure input is digits only and max length of 10 digits
+      if (inputValue.length > 10) {
+        this.numberInput = inputValue.slice(0, 10); // Limit to 10 digits
+      } else {
+        this.numberInput = inputValue; // Set the value if it's within the limit
+      }
+    },
+    submitNumber() {
+      console.log("Number submitted:", this.numberInput);
+    }
+  }
+};
+</script>
